@@ -89,7 +89,8 @@ enum EDefaultBtns
 	PC_ADV_OPT2,
 	PC_SPECTATE_GAME,
 	PC_SPECTATE_GAMES,
-	PC_BUTTONCOUNT		// must be last
+	PC_BUTTONCOUNT,
+	PC_VK_OPT  // must be last
 };
 
 // Non-standard button images start here
