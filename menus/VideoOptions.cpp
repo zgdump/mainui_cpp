@@ -21,11 +21,42 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Framework.h"
 #include "Bitmap.h"
 #include "PicButton.h"
+#include "SpinControl.h"
 #include "Slider.h"
 #include "CheckBox.h"
 
 #define ART_BANNER	  	"gfx/shell/head_vidoptions"
 #define ART_GAMMA		"gfx/shell/gamma"
+
+class CMenuRenderResolutionModel : public CMenuBaseArrayModel
+{
+public:
+	void Update() override
+	{
+		m_resolutions.AddToTail( resolution { 0.5, "0.5x" } );
+		m_resolutions.AddToTail( resolution { 1.0, "1.0x" } );
+		m_resolutions.AddToTail( resolution { 1.5, "1.5x" } );
+		m_resolutions.AddToTail( resolution { 2.0, "2.0x" } );
+	}
+
+	int GetRows() const override { return m_resolutions.Count(); }
+
+	const char *GetShortName( int i ) { return m_resolutions[i].name; }
+	const char *GetText( int i ) override { return m_resolutions[i].name; }
+
+private:
+	struct resolution {
+		float k;
+		const char *name;
+	};
+
+	CUtlVector<resolution> m_resolutions;
+};
+
+
+/*
+ * =============================================================================
+ */
 
 class CMenuVidOptions : public CMenuFramework
 {
@@ -49,11 +80,19 @@ public:
 	CMenuPicButton	done;
 
 	CMenuSlider	screenSize;
+
+	CMenuRenderResolutionModel renderResolutionsModel;
+	CMenuSpinControl renderResolution;
+
 	CMenuSlider	gammaIntensity;
+
 	CMenuSlider	glareReduction;
-	CMenuCheckBox	fastSky;
+
 	CMenuCheckBox   vbo;
+
 	CMenuCheckBox   bump;
+
+	CMenuSlider	  rtxBounces;
 
 	HIMAGE		hTestImage;
 };
@@ -88,7 +127,6 @@ void CMenuVidOptions::GetConfig( void )
 void CMenuVidOptions::SaveAndPopMenu( void )
 {
 	screenSize.WriteCvar();
-	fastSky.WriteCvar();
 	vbo.WriteCvar();
 	bump.WriteCvar();
 	// gamma and brightness is already written
@@ -142,75 +180,120 @@ CMenuVidOptions::Init
 */
 void CMenuVidOptions::_Init( void )
 {
+	const char *r_refdll_value = EngFuncs::GetCvarString("r_refdll");
+	qboolean is_vk = strcmp(r_refdll_value, "vk") == 0;
+
+	// =========================================================================
+
+	banner.SetPicture(ART_BANNER);
+
+	done.SetNameAndStatus( L( "GameUI_OK" ), L( "Go back to the Video Menu" ) );
+	done.SetCoord( 72, 230 );
+	done.SetPicture( PC_DONE );
+	done.onReleased = VoidCb( &CMenuVidOptions::SaveAndPopMenu );
+
+	// =========================================================================
+
 #ifdef PIC_KEEP_RGBDATA
 	hTestImage = EngFuncs::PIC_Load( ART_GAMMA, PIC_KEEP_RGBDATA );
 #else
 	hTestImage = EngFuncs::PIC_Load( ART_GAMMA, PIC_KEEP_SOURCE );
 #endif
 
-	banner.SetPicture(ART_BANNER);
-
 	testImage.iFlags = QMF_INACTIVE;
 	testImage.SetRect( 390, 225, 480, 450 );
 	testImage.SetPicture( ART_GAMMA );
 
-	done.SetNameAndStatus( L( "GameUI_OK" ), L( "Go back to the Video Menu" ) );
-	done.SetCoord( 72, 435 );
-	done.SetPicture( PC_DONE );
-	done.onReleased = VoidCb( &CMenuVidOptions::SaveAndPopMenu );
+	// =========================================================================
 
-	screenSize.SetNameAndStatus( L( "Screen size" ), L( "Set the screen size" ) );
-	screenSize.SetCoord( 72, 280 );
-	screenSize.Setup( 30, 120, 10 );
-	screenSize.onChanged = CMenuEditable::WriteCvarCb;
+	renderResolution.SetVisibility(is_vk);
+	screenSize.SetVisibility(!is_vk);
+
+	if (is_vk) {
+		renderResolutionsModel.Update();
+		renderResolution.szName = L( "Render size" );
+		renderResolution.Setup( &renderResolutionsModel );
+		renderResolution.SetRect( 80, 320, 200, 32 );
+		renderResolution.SetCharSize( QM_SMALLFONT );
+		//renderResolution.onCvarGet = VoidCb( &CMenuVidModes::GetXXXConfig );
+		//renderResolution.onCvarWrite = VoidCb( &CMenuVidModes::WriteXXXConfig );
+		renderResolution.bUpdateImmediately = true;
+		renderResolution.SetCurrentValue( 0.0 );
+	} else {
+		screenSize.SetNameAndStatus( L( "Screen size" ), L( "Set the screen size" ) );
+		screenSize.SetCoord( 80, 350 );
+		screenSize.Setup( 30, 120, 10 );
+		screenSize.onChanged = CMenuEditable::WriteCvarCb;
+	}
+
+	// =========================================================================
 
 	gammaIntensity.SetNameAndStatus( L( "GameUI_Gamma" ), L( "Set gamma value" ) );
-	gammaIntensity.SetCoord( 72, 340 );
+	gammaIntensity.SetCoord( 80, 420 );
 	gammaIntensity.Setup( 0.0, 1.0, 0.025 );
 	gammaIntensity.onChanged = VoidCb( &CMenuVidOptions::UpdateConfig );
 	gammaIntensity.onCvarGet = VoidCb( &CMenuVidOptions::GetConfig );
 
-	glareReduction.SetCoord( 72, 400 );
+	// =========================================================================
+
+	glareReduction.SetCoord( 80, 490 );
 	glareReduction.SetNameAndStatus( L( "GameUI_Brightness" ), L( "Set brightness level" ) );
 	glareReduction.Setup( 0, 1.0, 0.025 );
 	glareReduction.onChanged = VoidCb( &CMenuVidOptions::UpdateConfig );
 	glareReduction.onCvarGet = VoidCb( &CMenuVidOptions::GetConfig );
 
-	bump.SetNameAndStatus( L( "Bump-mapping" ), L( "Enable bump mapping" ) );
-	bump.SetCoord( 72, 515 );
-	if( !EngFuncs::GetCvarFloat( "r_vbo" ) )
-		bump.SetGrayed( true );
+	// =========================================================================
 
-	vbo.SetNameAndStatus( L( "Use VBO" ), L( "Use new world renderer. Faster, but rarely glitchy" ) );
-	vbo.SetCoord( 72, 565 );
-	vbo.onChanged = CMenuCheckBox::BitMaskCb;
-	vbo.onChanged.pExtra = &bump.iFlags;
-	vbo.bInvertMask = true;
-	vbo.iMask = QMF_GRAYED;
+	if (is_vk && !EngFuncs::GetCvarFloat( "vk_rtx" )) {
+		rtxBounces.SetNameAndStatus( L( "Ray bounces" ), L( "Set the count of ray max bounds" ) );
+		rtxBounces.SetCoord( 80, 560 );
+		rtxBounces.Setup( 1, 50, 1 );
+		rtxBounces.onChanged = CMenuEditable::WriteCvarCb;
+	}
 
-	fastSky.SetNameAndStatus( L( "Draw simple sky" ), L( "enable/disable fast sky rendering (for old computers)" ) );
-	fastSky.SetCoord( 72, 615 );
+	// =========================================================================
+
+	if (!is_vk) {
+		bump.SetNameAndStatus( L( "Bump-mapping" ), L( "Enable bump mapping" ) );
+		bump.SetCoord( 80, 560 );
+		if( !EngFuncs::GetCvarFloat( "r_vbo" ) )
+			bump.SetGrayed( true );
+
+		vbo.SetNameAndStatus( L( "Use VBO" ), L( "Use new world renderer. Faster, but rarely glitchy" ) );
+		vbo.SetCoord( 80, 610 );
+		vbo.onChanged = CMenuCheckBox::BitMaskCb;
+		vbo.onChanged.pExtra = &bump.iFlags;
+		vbo.bInvertMask = true;
+		vbo.iMask = QMF_GRAYED;
+	}
+
+	// =========================================================================
 
 	AddItem( background );
 	AddItem( banner );
 	AddItem( done );
-	AddItem( screenSize );
 	AddItem( gammaIntensity );
 	AddItem( glareReduction );
-	if( UI_IsXashFWGS() )
-	{
+	AddItem( testImage );
+
+	if (is_vk) {
+		AddItem( renderResolution );
+		AddItem( rtxBounces );
+	} else {
+		AddItem( screenSize );
 		AddItem( bump );
 		AddItem( vbo );
 	}
-	AddItem( fastSky );
-	AddItem( testImage );
-	screenSize.LinkCvar( "viewsize" );
+
 	gammaIntensity.LinkCvar( "gamma" );
 	glareReduction.LinkCvar( "brightness" );
+
+	//renderResolution.LinkCvar( "vk_rtx_render_resolution" );
+	rtxBounces.LinkCvar( "vk_rtx_bounces" );
+
+	screenSize.LinkCvar( "viewsize" );
 	bump.LinkCvar( "r_bump" );
 	vbo.LinkCvar( "r_vbo" );
-	fastSky.LinkCvar( "r_fastsky" );
-
 }
 
 void CMenuVidOptions::_VidInit()

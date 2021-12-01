@@ -134,7 +134,9 @@ public:
 		const int   index = renderers.GetCurrentValue();
 		const char *short_name = renderersModel.GetShortName( index );
 
-		rtx.SetVisibility(strcmp(short_name, "vk") == 0);
+		qboolean is_vk = strcmp(short_name, "vk") == 0;
+		rtx.SetVisibility(is_vk);
+		hdr.SetVisibility(is_vk);
 
 		EngFuncs::CvarSetString( "r_refdll", short_name );
 	}
@@ -150,6 +152,7 @@ public:
 	CMenuRenderersModel renderersModel;
 	CMenuSpinControl renderers;
 	CMenuCheckBox	 rtx;
+	CMenuCheckBox	 hdr;
 
 	int prevMode;
 	int prevModeX;
@@ -243,6 +246,7 @@ void CMenuVidModes::SetConfig( )
 	}
 
 	rtx.WriteCvar();
+	hdr.WriteCvar();
 
 	vsync.WriteCvar();
 
@@ -360,10 +364,17 @@ void CMenuVidModes::_Init( void )
 	renderers.bUpdateImmediately = true;
 
 	const char *r_refdll_value = EngFuncs::GetCvarString("r_refdll");
-	rtx.SetVisibility(strcmp(r_refdll_value, "vk") == 0);
+	qboolean is_vk = strcmp(r_refdll_value, "vk") == 0;
+
+	rtx.SetVisibility(is_vk);
 	rtx.SetNameAndStatus( L( "Enable RTX" ), L( "Enable realtime ray tracing" ) );
 	rtx.SetCoord( 80, 540 );
 	rtx.LinkCvar( "vk_rtx" );
+
+	hdr.SetVisibility(is_vk);
+	hdr.SetNameAndStatus( L( "HDR output" ), L( "Enable HDR output for HDR displays" ) );
+	hdr.SetCoord( 700, 620 );
+	hdr.LinkCvar( "vk_hdr" );
 
 	AddItem( background );
 	AddItem( banner );
@@ -373,6 +384,7 @@ void CMenuVidModes::_Init( void )
 	AddItem( rtx );
 	AddItem( windowed );
 	AddItem( vsync );
+	AddItem( hdr );
 	AddItem( vidList );
 
 	renderers.LinkCvar( "r_refdll", CMenuEditable::CVAR_STRING );
