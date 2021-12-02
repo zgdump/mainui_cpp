@@ -182,6 +182,7 @@ void CMenuVidOptions::_Init( void )
 {
 	const char *r_refdll_value = EngFuncs::GetCvarString("r_refdll");
 	qboolean is_vk = strcmp(r_refdll_value, "vk") == 0;
+	qboolean is_vk_rtx = EngFuncs::GetCvarFloat( "vk_rtx" );
 
 	// =========================================================================
 
@@ -209,7 +210,7 @@ void CMenuVidOptions::_Init( void )
 	renderResolution.SetVisibility(is_vk);
 	screenSize.SetVisibility(!is_vk);
 
-	if (is_vk) {
+	if (is_vk && is_vk_rtx) {
 		renderResolutionsModel.Update();
 		renderResolution.szName = L( "Render size" );
 		renderResolution.Setup( &renderResolutionsModel );
@@ -244,7 +245,7 @@ void CMenuVidOptions::_Init( void )
 
 	// =========================================================================
 
-	if (is_vk && !EngFuncs::GetCvarFloat( "vk_rtx" )) {
+	if (is_vk && is_vk_rtx) {
 		rtxBounces.SetNameAndStatus( L( "Ray bounces" ), L( "Set the count of ray max bounds" ) );
 		rtxBounces.SetCoord( 80, 560 );
 		rtxBounces.Setup( 1, 50, 1 );
@@ -276,7 +277,7 @@ void CMenuVidOptions::_Init( void )
 	AddItem( glareReduction );
 	AddItem( testImage );
 
-	if (is_vk) {
+	if (is_vk && is_vk_rtx) {
 		AddItem( renderResolution );
 		AddItem( rtxBounces );
 	} else {
