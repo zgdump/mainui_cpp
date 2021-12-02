@@ -322,14 +322,26 @@ UI_VidModes_Init
 */
 void CMenuVidModes::_Init( void )
 {
+	const char *r_refdll_value = EngFuncs::GetCvarString("r_refdll");
+	qboolean is_vk = strcmp(r_refdll_value, "vk") == 0;
+
+	qboolean is_rtx_supported = EngFuncs::GetCvarFloat( "vk_rtx_extension" );
+	qboolean is_hdr_supported = EngFuncs::GetCvarFloat( "vk_hdr_extension" );
+
+	// =========================================================================
+	
 	banner.SetPicture(ART_BANNER);
 
-	vidList.SetRect( 360, 230, -20, 365 );
+	// =========================================================================
+
+	vidList.SetRect( 360, 230, -20, 315 );
 	vidList.SetupColumn( 0, L( "GameUI_Resolution" ), 1.0f );
 	vidList.SetModel( &vidListModel );
 
+	// =========================================================================
+
 	windowed.SetNameAndStatus( L( "GameUI_Windowed" ), L( "GameUI_Windowed" ) );
-	windowed.SetCoord( 360, 620 );
+	windowed.SetCoord( 360, 570 );
 	SET_EVENT_MULTI( windowed.onChanged,
 	{
 		CMenuVidModes *parent = pSelf->GetParent(CMenuVidModes);
@@ -344,37 +356,52 @@ void CMenuVidModes::_Init( void )
 			parent->vidList.SetCurrentIndex( VID_AUTOMODE_POS );
 	});
 
+	// =========================================================================
 
 	vsync.SetNameAndStatus( L( "GameUI_VSync" ), L( "GameUI_VSync" ) );
-	vsync.SetCoord( 360, 670 );
-	vsync.LinkCvar( "gl_vsync" );
+	vsync.SetCoord( 360, 620 );
+
+	// =========================================================================
+
+	const char *hdr_description = is_hdr_supported
+		? "Enable HDR output for HDR displays"
+		: "Enable HDR output for HDR displays (Unsupported)";
+
+	hdr.SetVisibility( is_vk );
+	hdr.SetGrayed( !is_hdr_supported );
+	hdr.SetNameAndStatus( L( "HDR output" ), L( hdr_description ) );
+	hdr.SetCoord( 360, 670 );
+
+	// =========================================================================
 
 	testModeMsgBox.SetMessage( testModeMsg );
 	testModeMsgBox.onPositive = VoidCb( &CMenuVidModes::ApplyChanges );
 	testModeMsgBox.onNegative = VoidCb( &CMenuVidModes::RevertChanges );
 	testModeMsgBox.Link( this );
 
+	// =========================================================================
+
 	renderersModel.Update();
 	renderers.szName = L( "GameUI_Renderer" );
 	renderers.Setup( &renderersModel );
-	renderers.SetRect( 80, 480, 250, 32 );
+	renderers.SetRect( 80, 462, 250, 32 );
 	renderers.SetCharSize( QM_SMALLFONT );
 	renderers.onCvarGet = VoidCb( &CMenuVidModes::GetRendererConfig );
 	renderers.onCvarWrite = VoidCb( &CMenuVidModes::WriteRendererConfig );
 	renderers.bUpdateImmediately = true;
 
-	const char *r_refdll_value = EngFuncs::GetCvarString("r_refdll");
-	qboolean is_vk = strcmp(r_refdll_value, "vk") == 0;
+	// =========================================================================
 
-	rtx.SetVisibility(is_vk);
-	rtx.SetNameAndStatus( L( "Enable RTX" ), L( "Enable realtime ray tracing" ) );
-	rtx.SetCoord( 80, 540 );
-	rtx.LinkCvar( "vk_rtx" );
+	const char *rtx_description = is_rtx_supported
+		? "Enable realtime ray tracing"
+		: "Enable realtime ray tracing (Unsupported)";
 
-	hdr.SetVisibility(is_vk);
-	hdr.SetNameAndStatus( L( "HDR output" ), L( "Enable HDR output for HDR displays" ) );
-	hdr.SetCoord( 700, 620 );
-	hdr.LinkCvar( "vk_hdr" );
+	rtx.SetVisibility( is_vk );
+	rtx.SetGrayed( !is_rtx_supported );
+	rtx.SetNameAndStatus( L( "Enable RTX" ), L( rtx_description ) );
+	rtx.SetCoord( 80, 522 );
+
+	// =========================================================================
 
 	AddItem( background );
 	AddItem( banner );
@@ -387,6 +414,11 @@ void CMenuVidModes::_Init( void )
 	AddItem( hdr );
 	AddItem( vidList );
 
+	// =========================================================================
+
+	vsync.LinkCvar( "gl_vsync" );
+	hdr.LinkCvar( "vk_hdr" );
+	rtx.LinkCvar( "vk_rtx" );
 	renderers.LinkCvar( "r_refdll", CMenuEditable::CVAR_STRING );
 }
 
