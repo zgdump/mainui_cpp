@@ -46,6 +46,8 @@ private:
 	void _Init() override;
 	void _VidInit( ) override;
 
+	void Draw( ) override;
+
 	void VidInit(bool connected);
 
 	void QuitDialog( void *pExtra = NULL );
@@ -379,6 +381,13 @@ void CMenuMain::VidInit( bool connected )
 void CMenuMain::_VidInit()
 {
 	VidInit( CL_IsActive() );
+}
+
+void CMenuMain::Draw( )
+{
+	CMenuBackgroundBitmap::SetIsEnabledMap(true);
+	CMenuFramework::Draw();
+	CMenuBackgroundBitmap::SetIsEnabledMap(false);
 }
 
 ADD_MENU( menu_main, CMenuMain, UI_Main_Menu );
