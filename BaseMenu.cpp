@@ -570,7 +570,7 @@ bool UI_StartBackGroundMap( void )
 
 	first = FALSE;
 
-	// some map is already running
+	// some map is already running or no maps
 	if( !uiStatic.bgmapcount || CL_IsActive() || gpGlobals->demoplayback )
 		return FALSE;
 

@@ -125,6 +125,7 @@ void CMenuBaseWindow::Draw()
 		// CalcPosition();
 		CalcItemsPositions();
 	}
+
 	CMenuItemsHolder::Draw();
 }
 

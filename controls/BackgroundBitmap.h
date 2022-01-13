@@ -39,6 +39,9 @@ public:
 
 	static void LoadBackground();
 	static bool ShouldDrawLogoMovie() { return s_bEnableLogoMovie; }
+
+	static void SetIsEnabledMap(bool enable_map) { s_bEnableMap = enable_map; }
+	static bool GetIsEnabledMap() { return s_bEnableMap; }
 private:
 	void DrawBackgroundLayout( Point p, float xScale, float yScale );
 	// void DrawSplash( Point p, float xScale, float yScale );
@@ -48,6 +51,11 @@ private:
 	static bool LoadBackgroundImage( const bool gamedirOnly ); // Steam background loader
 	static bool CheckBackgroundSplash( const bool gamedirOnly ); // WON background loader
 
+	//==========
+	// Hack-style
+	//==========
+
+	static bool s_bEnableMap;
 
 	//==========
 	// WON-style

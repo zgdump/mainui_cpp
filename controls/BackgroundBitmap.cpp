@@ -20,6 +20,7 @@ GNU General Public License for more details.
 #include "Utils.h"
 #include "BaseWindow.h"
 
+bool CMenuBackgroundBitmap::s_bEnableMap = false;
 bool CMenuBackgroundBitmap::s_bEnableLogoMovie = false;
 Size CMenuBackgroundBitmap::s_BackgroundImageSize;
 int CMenuBackgroundBitmap::s_iBackgroundCount = 0;
@@ -142,9 +143,10 @@ void CMenuBackgroundBitmap::Draw()
 		return;
 	}
 
+
 	if( EngFuncs::ClientInGame() )
 	{
-		if( EngFuncs::GetCvarFloat( "cl_background" ) )
+		if( EngFuncs::GetCvarFloat( "cl_background" ) && s_bEnableMap )
 		{
 			return;
 		}
